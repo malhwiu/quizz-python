@@ -2,75 +2,102 @@
 
 from ast import Str
 from asyncio.windows_events import NULL
-import time
-import sqlite3
 import os
-import sys
+from os import system, name
+import sqlite3
+import time
+from datetime import datetime
+import threading
 
-# print(os.name)
+#global variablet
+score = 0
+startTime = datetime.now()
 
-def getAllRows() :
-    def clear_console() :
+def End():
+    print("\nPisteet:", f"{score}/39")
+    endTime = datetime.now()
+    aika = endTime - startTime
+    kesto = datetime.now()
+    kesto = aika
+    print("visan kesto =", kesto)
+
+def Quiz():
+    #python on outo nii tollee koska ei osaa muuttaa niitä muuten
+    global score
+    score = 0
+    
+    def clear_console():
         if os.name == 'nt':
             os.system('cls')
         else:
-            os.system('clear')
-
-    score = 0 #Pisteiden aloitus.
-    remaining_time = 60 # 1 minuutti
-
+            os.system('clear')  
     try:
-        connection = sqlite3.connect('db_tietovisa_python.db') # Yhditää SQLite databaseen
+        #tää yhdistää sen siihen tietokantaan 
+        #laita tähän sinulle toimiva tiedostopolku!!---?
+        connection = sqlite3.connect('C:\\dbs\\tiovisa.db')
         cursor = connection.cursor()
-        sqlite_select_query = """SELECT kysymys, vastaus1, vastaus2, vastaus3, oikea_vastaus_nro FROM tbl_aineisto ORDER BY RANDOM()"""
+        #tää noutaa ne kymysykset
+        sqlite_select_query = """SELECT kysymys, vastaus1, vastaus2, vastaus3, oikea_vastaus FROM tbl_aineisto ORDER BY RANDOM()"""
         cursor.execute(sqlite_select_query)
+        #tää hakee ne kaikki tiedot 
         records = cursor.fetchall()
-        kysymysnumero = 1 #Alkuarvo kysymysnumerolle
-
-        while remaining_time > 0 and kysymysnumero <= 39:
+        startTime = datetime.now()
+        print(startTime.strftime("%M:%S"))
+        
+        lopeta = False
+        
+        enumerate(records, 1)
+        row = 0
+        
+        while lopeta == False:
+            row += 1
+            
             clear_console()
-            row = records[kysymysnumero-1] # Hakee kysymyksen sekoitetusta lista´sta
-            print(f"{kysymysnumero}. Kysymys: {row[0]}") # Tulostaa Kysymyksen ja kysymysnumeron
-            print(f"Vastaus 1: {row[1]}") # Tulostaa Vastaus vaihtoehdot
-            print(f"Vastaus 2: {row[2]}")
-            print(f"Vastaus 3: {row[3]}")
-            print("\n") 
+            #ja tää on for lause joka printtaa ne kysymykset, niin monta kertaa kuin rivejä löytyy tietokannasta.
+            print(f"{row}. Kysymys: {records[row][0]}")
+            print(f"Vastaus 1: {records[row][1]}")
+            print(f"Vastaus 2: {records[row][2]}")
+            print(f"Vastaus 3: {records[row][3]}")
+            print("\n")
+            #tää user on käyttäjän inputin nimi
             user = None
-            start_time = time.time() # Aloittaa ajastimen
-            while user not in ["1", "2", "3"]:
-                user = input("Anna oikea vastaus: ") # Kysyy käyttäjältä vastausta
-                if user not in ["1", "2", "3"]:
+            
+            kesken = datetime.now()
+            print("aikaa kulutettu :", kesken - startTime)
+            
+            while user not in ["0", "1", "2", "3"]:
+                user = input("Anna oikea vastaus: ")
+                
+                if user not in ["0","1", "2", "3"]:
+                    print("\nVirheellinen vastausvaihtoehto. Sopivia vastausvaihtoehtoja ovat 1, 2 ja 3. Anna vastaus uudelleen.")
                     print("\n")
-                    print("Tama ei ole oikea vastausvaihtoehto. Kayta vastausvaihtoehtoja 1, 2 ja 3. Anna vastaus uudelleen.")
+                elif user == "0": #lopettaa tietovisan jos antaa 0:n vastaukseksi
+                    lopeta = True
+                elif int(user) == records[row][4]:
+                    print("\nOikea vastaus!")
                     print("\n")
-                elif user == row[4]:
-                    print("\n")
-                    print("Oikea vastaus!")
-                    print("\n")
-                    score += 1 #Lisää pisteitä aina kun saat oikean vastauksen.
-                    elapsed_time = time.time() - start_time # Calculate the time taken to answer
-                    remaining_time += 5 # Add 5 seconds to the remaining time
-                    kysymysnumero += 1 #Kasvattaa kysymysnumeroa yhdellä
+                    score += 1
                 else:
+                    print("\nVirheellinen vastaus!")
                     print("\n")
-                    print("Väärä vastaus!")
-                    print("\n")
-                    remaining_time -= 2 # Vie 2 sekunttia ajasta
-                    kysymysnumero += 1 #Kasvattaa kysymysnumeroa yhdellä
-                print("\n") # Tulostaa tyhjän rivin, jotta tekstiä olisi helpompi lukea
-            print(f"Aikaa jäljellä: {remaining_time} sekuntia")
-            print("------------------------------------------------------------------------------------------------------------------------")
-            time.sleep(1.5)
-        print("\n")
-        print("Pisteet:", f"{score}/39") #Tulostaa pisteiden loppumäärän oikeiden vastausten perusteella.
-        cursor.close()
+                time.sleep(1.5)
+                if score >= 39:
+                    break
+
+            #lopettaa pelin jos käyttäjä haluaa
+            if lopeta == True:
+                cursor.close()
+                End()
+            #tää laskee pisteitä, toimii. näyttää sen pelin lopussa
+            if score >= 39:
+                cursor.close()
+                End()
 
     except sqlite3.Error as error:
-        print("Failed to read data from table", error) # Ilmoittaa virheistä
-        exit()
+        print("Failed to read data from table", error)
     finally:
         if connection:
             connection.close()
-            print("The Sqlite connection is closed") # Ilmoittaa kun kysely on lopussa
+            print("The Sqlite connection is closed")
 
-getAllRows()
+Quiz()
