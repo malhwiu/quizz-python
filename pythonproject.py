@@ -1,5 +1,3 @@
-encodingPythonApplicationV2.py
-
 # -*- coding: iso-8859-1 -*-
 
 # It's not a great idea to use a europe only encoding standard
