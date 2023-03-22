@@ -1,4 +1,8 @@
+encodingPythonApplicationV2.py
+
 # -*- coding: iso-8859-1 -*-
+
+# It's not a great idea to use a europe only encoding standard
 
 from ast import Str
 from asyncio.windows_events import NULL
@@ -7,39 +11,74 @@ from os import system, name
 import sqlite3
 import time
 from datetime import datetime
+from enum import IntEnum
 import threading
+import curses
 
-#global variablet
+
+class Position(IntEnum):
+    QUESTION = 0,
+    FIRSTANS = 1.
+    SECONDANS = 2.
+    THIRDANS = 3.
+    TIMER = 4,
+    ANS = 7,
+    USRINPUTTEXT = 5
+    USRINPUT = 6
+
+
+# For some reason in curses x and y position are flipped
+
+#global variables
 score = 0
 startTime = datetime.now()
+tui = curses.initscr()
+
+# this is the amount of time in seconds we wait before the timer is updated
+timer_update_time = 0.25
+
+# just in case
+tui.refresh()
 
 def End():
-    print("\nPisteet:", f"{score}/39")
+    print(F"Pisteet: {score}")
     endTime = datetime.now()
     aika = endTime - startTime
     kesto = datetime.now()
     kesto = aika
-    print("visan kesto =", kesto)
+    curses.endwin()
+    print(F"visan kesto = {kesto}")
+
+def user_input():
+
+    ans = ""
+    c = ""
+    tui.addstr(Position.USRINPUTTEXT,0,"Anna oikea vastaus!")
+    #while c != "\n" or c != "10" or c != 10:
+    c = tui.getch()
+    ans += chr(c)
+    tui.addstr(8,0,ans)
+    return ans
+
+def update_timer():
+    threading.Timer(timer_update_time, update_timer).start()
+    kesken = datetime.now()
+    tui.addstr(Position.TIMER,0,F"aikaa kulutettu: {kesken - startTime}")
+    tui.refresh()
 
 def Quiz():
-    #python on outo nii tollee koska ei osaa muuttaa niitä muuten
     global score
     score = 0
     
-    def clear_console():
-        if os.name == 'nt':
-            os.system('cls')
-        else:
-            os.system('clear')  
     try:
-        #tää yhdistää sen siihen tietokantaan 
-        #laita tähän sinulle toimiva tiedostopolku!!---?
-        connection = sqlite3.connect('C:\\dbs\\tiovisa.db')
+        # tÃ¤Ã¤ yhdistÃ¤Ã¤ sen siihen tietokantaan 
+        # laita tÃ¤hÃ¤n sinulle toimiva tiedostopolku!!
+        connection = sqlite3.connect('tiovisa.db')
         cursor = connection.cursor()
-        #tää noutaa ne kymysykset
-        sqlite_select_query = """SELECT kysymys, vastaus1, vastaus2, vastaus3, oikea_vastaus FROM tbl_aineisto ORDER BY RANDOM()"""
+        # tÃ¤Ã¤ noutaa ne kymysykset
+        sqlite_select_query = """SELECT kysymys, vastaus1, vastaus2, vastaus3, Oikea_vastaus_nro FROM tbl_aineisto ORDER BY RANDOM()"""
         cursor.execute(sqlite_select_query)
-        #tää hakee ne kaikki tiedot 
+        # tÃ¤Ã¤ hakee ne kaikki tiedot 
         records = cursor.fetchall()
         startTime = datetime.now()
         print(startTime.strftime("%M:%S"))
@@ -52,46 +91,53 @@ def Quiz():
         while lopeta == False:
             row += 1
             
-            clear_console()
-            #ja tää on for lause joka printtaa ne kysymykset, niin monta kertaa kuin rivejä löytyy tietokannasta.
-            print(f"{row}. Kysymys: {records[row][0]}")
-            print(f"Vastaus 1: {records[row][1]}")
-            print(f"Vastaus 2: {records[row][2]}")
-            print(f"Vastaus 3: {records[row][3]}")
-            print("\n")
-            #tää user on käyttäjän inputin nimi
+            # clear_console()
+            # print question and answers
+            tui.addstr(Position.QUESTION,0,f"{row}. Kysymys: {records[row][0]}")
+            tui.addstr(Position.FIRSTANS,0,f"Vastaus 1: {records[row][1]}")
+            tui.addstr(Position.SECONDANS,0,f"Vastaus 2: {records[row][2]}")
+            tui.addstr(Position.THIRDANS,0,f"Vastaus 3: {records[row][3]}")
+            # user input is stored here
             user = None
-            
-            kesken = datetime.now()
-            print("aikaa kulutettu :", kesken - startTime)
-            
+
+            update_timer()
             while user not in ["0", "1", "2", "3"]:
-                user = input("Anna oikea vastaus: ")
-                
-                if user not in ["0","1", "2", "3"]:
-                    print("\nVirheellinen vastausvaihtoehto. Sopivia vastausvaihtoehtoja ovat 1, 2 ja 3. Anna vastaus uudelleen.")
-                    print("\n")
-                elif user == "0": #lopettaa tietovisan jos antaa 0:n vastaukseksi
+                tui.refresh()
+                # get user input
+                #user = input("Anna oikea vastaus: ")
+
+                user = user_input()
+                tui.clear()
+
+                #a = tui.getch()
+                # check if user gave 1, 2 or 3, as an answer
+                if str(user) not in ["0","1", "2", "3"]:
+                    tui.addstr(Position.ANS,0,
+F"Virheellinen vastausvaihtoehto. Sopivia vastausvaihtoehtoja ovat 1, 2 ja 3. Anna vastaus uudelleen.")
+                    
+                elif user == "0": # if user gave 0 terminate the program
                     lopeta = True
-                elif int(user) == records[row][4]:
-                    print("\nOikea vastaus!")
-                    print("\n")
+                # elif int(user) == records[row][4]:
+                elif user == records[row][4]:
+                    # if user's give number mathches the number in the database
+                    tui.addstr(Position.ANS,0,"Oikea vastaus!")
                     score += 1
                 else:
-                    print("\nVirheellinen vastaus!")
-                    print("\n")
-                time.sleep(1.5)
+                    tui.addstr(Position.ANS,0,F"Virheellinen vastaus!")
+
+                # time.sleep(1.5)
                 if score >= 39:
                     break
+            
+            #lopettaa pelin jos kÃ¤yttÃ¤jÃ¤ haluaa
+            if lopeta == True or score >= 39:
+                cursor.close()
+                End()
 
-            #lopettaa pelin jos käyttäjä haluaa
-            if lopeta == True:
-                cursor.close()
-                End()
-            #tää laskee pisteitä, toimii. näyttää sen pelin lopussa
-            if score >= 39:
-                cursor.close()
-                End()
+            #tÃ¤Ã¤ laskee pisteitÃ¤, toimii. nÃ¤yttÃ¤Ã¤ sen pelin lopussa
+            # if score >= 39:
+            #     cursor.close()
+            #     End()
 
     except sqlite3.Error as error:
         print("Failed to read data from table", error)
