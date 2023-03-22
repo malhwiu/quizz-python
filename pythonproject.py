@@ -37,7 +37,7 @@ input_box = curses.newwin(4, num_cols-2, 8, 1)
 TIMER_UPDATE_TIME = 0.25
 # This is used as the default x position for the windows
 X_POS = 3
-max_score = 39
+max_score = 3
 ans_len = 0
 
 def clear_windows():
@@ -62,6 +62,7 @@ def End():
     curses.endwin()
     print(f"Pisteet: {score}")
     print(f"Visan kesto = {kesto}")
+    exit()
 
 def user_input():
     global ans_len
@@ -113,7 +114,7 @@ def Quiz():
     try:
         # tää yhdistää sen siihen tietokantaan
         # laita tähän sinulle toimiva tiedostopolku!!
-        connection = sqlite3.connect("tiovisa.db")
+        connection = sqlite3.connect("db_tietovisa_python.db")
         cursor = connection.cursor()
         # tää noutaa ne kymysykset
         sqlite_select_query = "SELECT kysymys, vastaus1, vastaus2, vastaus3, Oikea_vastaus_nro FROM tbl_aineisto ORDER BY RANDOM()"
@@ -140,7 +141,8 @@ def Quiz():
 
             # user input is stored here
             user = None
-            update_timer()
+            if True == lopeta:
+                update_timer()
 
             # ask for input until the user give 0,1,2 or 3
             while user not in ["0", "1", "2", "3"]:
