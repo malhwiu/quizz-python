@@ -197,6 +197,5 @@ def Quiz():
     finally:
         if connection:
             connection.close()
-            print("The Sqlite connection is closed")
 
 Quiz()
