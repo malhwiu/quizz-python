@@ -43,6 +43,8 @@ ans_len = 0
 def clear_windows():
     tui.clear()
     input_box.clear()
+    
+
 
 def update_screen():
     # The order in which the windows are refreshed matters
@@ -61,7 +63,7 @@ def End():
 
     curses.endwin()
     print(f"Pisteet: {score}")
-    print(f"Visan kesto = {kesto}")
+    print(f"Visan kesto = {format_timedelta(kesto)}")
     exit()
 
 def user_input():
@@ -88,6 +90,11 @@ def user_input():
     # clear window from charachters
     input_box.clear()
     return ans[0] # return the first charachter
+
+def format_timedelta(td):
+    minutes, seconds = divmod(td.seconds + td.days * 86400, 60)
+    hours, minutes = divmod(minutes, 60)
+    return '{:d}:{:02d}:{:02d}'.format(hours, minutes, seconds)
 
 def update_timer():
     threading.Timer(TIMER_UPDATE_TIME, update_timer).start()
