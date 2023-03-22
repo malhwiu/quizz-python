@@ -13,7 +13,6 @@ from enum import IntEnum
 import threading
 import curses
 
-
 class Position(IntEnum):
     QUESTION = 0,
     FIRSTANS = 1.
@@ -42,7 +41,6 @@ def End():
     print(F"Pisteet: {score}")
     endTime = datetime.now()
     aika = endTime - startTime
-    kesto = datetime.now()
     kesto = aika
     curses.endwin()
     print(F"visan kesto = {kesto}")
@@ -52,7 +50,6 @@ def user_input():
     ans = ""
     c = ""
     tui.addstr(Position.USRINPUTTEXT,0,"Anna oikea vastaus!")
-    #while c != "\n" or c != "10" or c != 10:
     c = tui.getch()
     ans += chr(c)
     tui.addstr(8,0,ans)
@@ -71,7 +68,7 @@ def Quiz():
     try:
         # tää yhdistää sen siihen tietokantaan 
         # laita tähän sinulle toimiva tiedostopolku!!
-        connection = sqlite3.connect('tiovisa.db')
+        connection = sqlite3.connect('db_tietovisa_python.db')
         cursor = connection.cursor()
         # tää noutaa ne kymysykset
         sqlite_select_query = """SELECT kysymys, vastaus1, vastaus2, vastaus3, Oikea_vastaus_nro FROM tbl_aineisto ORDER BY RANDOM()"""
@@ -89,7 +86,6 @@ def Quiz():
         while lopeta == False:
             row += 1
             
-            # clear_console()
             # print question and answers
             tui.addstr(Position.QUESTION,0,f"{row}. Kysymys: {records[row][0]}")
             tui.addstr(Position.FIRSTANS,0,f"Vastaus 1: {records[row][1]}")
